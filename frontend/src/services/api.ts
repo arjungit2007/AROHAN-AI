@@ -29,7 +29,11 @@ export function getBaseApiUrl(): string {
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '') {
       return 'http://localhost:8000/api/v1';
     }
-    // For production hosting on custom domain or full-stack proxy
+    // If running on Vercel deployment and no custom VITE_API_URL was set, point directly to the live Render backend
+    if (hostname.endsWith('.vercel.app') || hostname === 'arohan-phi.vercel.app') {
+      return 'https://arohan-backend.onrender.com/api/v1';
+    }
+    // For custom single-domain hosting or full-stack reverse proxy
     if (window.location.origin) {
       return `${window.location.origin}/api/v1`;
     }

@@ -12,6 +12,6 @@ services:
       - key: DATABASE_URL
         value: sqlite:///./arohan.db
       - key: CORS_ORIGINS
-        value: "*"
+        value: https://arohan-phi.vercel.app,http://localhost:5173,http://localhost:4173
       - key: AI_PROVIDER
         value: auto

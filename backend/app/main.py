@@ -43,13 +43,15 @@ app = FastAPI(
 
 # CORS Middleware
 origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
-allow_creds = "*" not in origins
+clean_origins = [o for o in origins if o != "*"]
+if not clean_origins:
+    clean_origins = ["https://arohan-phi.vercel.app", "http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$|^https://.*\.vercel\.app$" if allow_creds else None,
-    allow_credentials=allow_creds,
+    allow_origins=clean_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$|^https://.*\.vercel\.app$",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
