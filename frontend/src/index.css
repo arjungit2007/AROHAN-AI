@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Trebuchet MS', 'Aptos', 'Segoe UI', system-ui, sans-serif;
+  color: #162923;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background-color: #F4F7F4;
+  color: #162923;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0 !important;
+  line-height: 1.15;
+}
+
+input,
+select,
+textarea {
+  min-height: 44px;
+  font: inherit;
+  font-size: max(16px, 1em);
+}
+
+textarea {
+  min-height: 88px;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* High Contrast Mode for Accessibility */
+body.high-contrast {
+  filter: contrast(125%);
+  background-color: #ffffff;
+  color: #000000;
+}
+
+body.high-contrast button,
+body.high-contrast a {
+  outline: 2px solid #000000 !important;
+}
+
+/* Text Size scaling */
+body.text-size-large {
+  font-size: 1.125rem;
+}
+
+body.text-size-xl {
+  font-size: 1.25rem;
+}
+
+/* Accessible focus ring */
+*:focus-visible {
+  outline: 3px solid #C76128;
+  outline-offset: 2px;
+}
+
+.tracking-tighter,
+.tracking-tight,
+.tracking-normal,
+.tracking-wide,
+.tracking-wider,
+.tracking-widest {
+  letter-spacing: 0 !important;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
