@@ -70,6 +70,62 @@ def list_books(
         results.append(schemas.BookListingOut(**book_dict))
     return results
 
+@router.get("/my/listings", response_model=List[schemas.BookListingOut])
+def get_my_book_listings(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieves books listed by the current user."""
+    listings = db.query(models.BookListing).filter(models.BookListing.donor_id == current_user.id).all()
+    results = []
+    for b in listings:
+        results.append(
+            schemas.BookListingOut(
+                id=b.id,
+                title=b.title,
+                author=b.author,
+                subject=b.subject,
+                class_or_exam=b.class_or_exam,
+                language=b.language,
+                edition=b.edition,
+                condition=b.condition,
+                general_pickup_area=b.general_pickup_area,
+                collection_point_name=b.collection_point_name,
+                image_url=b.image_url,
+                notes=b.notes,
+                status=b.status,
+                donor_id=b.donor_id,
+                donor_name=current_user.full_name,
+                created_at=b.created_at
+            )
+        )
+    return results
+
+@router.get("/my/requests", response_model=List[schemas.BookRequestOut])
+def get_my_book_requests(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieves book requests made by the student."""
+    requests = db.query(models.BookRequest).filter(models.BookRequest.student_id == current_user.id).all()
+    results = []
+    for r in requests:
+        results.append(
+            schemas.BookRequestOut(
+                id=r.id,
+                book_id=r.book_id,
+                book_title=r.book.title if r.book else "Educational Textbook",
+                student_id=r.student_id,
+                student_name=current_user.full_name,
+                request_note=r.request_note,
+                status=r.status,
+                safe_handover_details=r.safe_handover_details,
+                created_at=r.created_at,
+                updated_at=r.updated_at
+            )
+        )
+    return results
+
 @router.get("/{book_id}", response_model=schemas.BookListingOut)
 def get_book_detail(book_id: int, db: Session = Depends(get_db)):
     """Retrieves book details and safe community handover collection point."""
@@ -195,62 +251,6 @@ def request_book(
         created_at=book_req.created_at,
         updated_at=book_req.updated_at
     )
-
-@router.get("/my/listings", response_model=List[schemas.BookListingOut])
-def get_my_book_listings(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Retrieves books listed by the current user."""
-    listings = db.query(models.BookListing).filter(models.BookListing.donor_id == current_user.id).all()
-    results = []
-    for b in listings:
-        results.append(
-            schemas.BookListingOut(
-                id=b.id,
-                title=b.title,
-                author=b.author,
-                subject=b.subject,
-                class_or_exam=b.class_or_exam,
-                language=b.language,
-                edition=b.edition,
-                condition=b.condition,
-                general_pickup_area=b.general_pickup_area,
-                collection_point_name=b.collection_point_name,
-                image_url=b.image_url,
-                notes=b.notes,
-                status=b.status,
-                donor_id=b.donor_id,
-                donor_name=current_user.full_name,
-                created_at=b.created_at
-            )
-        )
-    return results
-
-@router.get("/my/requests", response_model=List[schemas.BookRequestOut])
-def get_my_book_requests(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Retrieves book requests made by the student."""
-    requests = db.query(models.BookRequest).filter(models.BookRequest.student_id == current_user.id).all()
-    results = []
-    for r in requests:
-        results.append(
-            schemas.BookRequestOut(
-                id=r.id,
-                book_id=r.book_id,
-                book_title=r.book.title if r.book else "Educational Textbook",
-                student_id=r.student_id,
-                student_name=current_user.full_name,
-                request_note=r.request_note,
-                status=r.status,
-                safe_handover_details=r.safe_handover_details,
-                created_at=r.created_at,
-                updated_at=r.updated_at
-            )
-        )
-    return results
 
 @router.put("/requests/{request_id}", response_model=schemas.BookRequestOut)
 def update_book_request_status(

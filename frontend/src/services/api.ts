@@ -22,18 +22,20 @@ export function getBaseApiUrl(): string {
     if (sanitized.endsWith('/api')) return `${sanitized}/v1`;
     return `${sanitized}/api/v1`;
   }
-  // When running in a browser, use the current origin if not on Vite dev port (5173)
-  // This enables instant single-domain tunnels, Docker, and full-stack hosting
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    if (window.location.port === '5173') {
+  // When running in a browser environment
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname || '';
+    // If running on local machine (dev server, preview, or jsdom test), point to default local FastAPI backend
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '') {
       return 'http://localhost:8000/api/v1';
     }
-    return `${window.location.origin}/api/v1`;
+    // For production hosting on custom domain or full-stack proxy
+    if (window.location.origin) {
+      return `${window.location.origin}/api/v1`;
+    }
   }
   return 'http://localhost:8000/api/v1';
 }
-
-const BASE_URL = getBaseApiUrl();
 
 class ApiService {
   private token: string | null = null;
@@ -70,22 +72,63 @@ class ApiService {
       headers,
     };
 
+    const baseUrl = getBaseApiUrl();
+    const targetUrl = `${baseUrl}${endpoint}`;
+
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, config);
+      const response = await fetch(targetUrl, config);
+      const contentType = (response.headers.get('content-type') || '').toLowerCase();
       
       if (!response.ok) {
         let errorMessage = `HTTP error ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.detail || errorMessage;
+          if (contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.detail || errorMessage;
+          } else {
+            const text = await response.text();
+            if (text.includes('<!doctype') || text.includes('<html')) {
+              if (response.status === 404) {
+                errorMessage = `API endpoint '${endpoint}' was not found on backend (HTTP 404).`;
+              } else if (response.status >= 500) {
+                errorMessage = `Backend server returned HTTP ${response.status} (Service Unavailable). Please verify the backend service is running.`;
+              } else {
+                errorMessage = `Server returned an HTML error page (HTTP ${response.status}).`;
+              }
+            } else if (text.trim()) {
+              errorMessage = text.slice(0, 150);
+            }
+          }
         } catch {
-          // non-JSON error
+          // Keep default errorMessage
         }
         throw new Error(errorMessage);
       }
 
+      // If response is OK (200..299), verify that it is actually JSON and not an SPA index.html fallback
+      if (!contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text.includes('<!doctype') || text.includes('<html')) {
+          throw new Error(
+            `API endpoint '${endpoint}' returned an HTML page instead of JSON. The backend server at ${baseUrl} may be stopped, unreachable, or misconfigured with SPA fallback.`
+          );
+        }
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(`Invalid response format received from ${endpoint}. Expected JSON.`);
+        }
+      }
+
       return await response.json();
     } catch (err: any) {
+      if (err.name === 'TypeError' && err.message?.toLowerCase().includes('fetch')) {
+        const networkError = new Error(
+          `Could not connect to the Arohan AI backend at ${baseUrl}. Please ensure the backend server is running on port 8000.`
+        );
+        console.error(`API Network Error on ${endpoint}:`, networkError.message);
+        throw networkError;
+      }
       console.error(`API Error on ${endpoint}:`, err.message);
       throw err;
     }

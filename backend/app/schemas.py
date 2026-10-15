@@ -111,7 +111,7 @@ class CareerRecommendationResponse(BaseModel):
     recommendations: List[CareerPathwayOut]
     is_demo_mode: bool
     rationale: str
-    timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
+    timestamp: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc))
 
 # --- Roadmap Schemas ---
 class RoadmapStepBase(BaseModel):

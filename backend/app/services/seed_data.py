@@ -302,7 +302,7 @@ def seed_database(db: Session):
             official_source_url="https://www.skillindiadigital.gov.in",
             official_source_name="Skill India Digital",
             is_completed=True,
-            completed_at=datetime.datetime.utcnow() - datetime.timedelta(days=10),
+            completed_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10),
             saved_next_action="Review basic terminal commands"
         ),
         models.RoadmapStep(

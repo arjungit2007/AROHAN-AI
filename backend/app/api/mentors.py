@@ -34,6 +34,64 @@ def list_mentors(
 
     return filtered
 
+@router.get("/my/requests", response_model=List[schemas.MentorshipRequestOut])
+def get_my_mentorship_requests(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves mentorship requests associated with current user (as either student or mentor).
+    """
+    results = []
+    if current_user.role == "mentor":
+        mentor_prof = db.query(models.MentorProfile).filter(models.MentorProfile.user_id == current_user.id).first()
+        if mentor_prof:
+            reqs = db.query(models.MentorshipRequest).filter(
+                models.MentorshipRequest.mentor_id == mentor_prof.id
+            ).order_by(models.MentorshipRequest.created_at.desc()).all()
+            for r in reqs:
+                results.append(
+                    schemas.MentorshipRequestOut(
+                        id=r.id,
+                        mentor_id=r.mentor_id,
+                        mentor_name=mentor_prof.display_name,
+                        student_id=r.student_id,
+                        student_name=r.student.full_name if r.student else "Student",
+                        topic=r.topic,
+                        student_goals=r.student_goals,
+                        preferred_language=r.preferred_language,
+                        status=r.status,
+                        mentor_response_message=r.mentor_response_message,
+                        safety_notes=r.safety_notes,
+                        created_at=r.created_at,
+                        updated_at=r.updated_at
+                    )
+                )
+    else:
+        reqs = db.query(models.MentorshipRequest).filter(
+            models.MentorshipRequest.student_id == current_user.id
+        ).order_by(models.MentorshipRequest.created_at.desc()).all()
+        for r in reqs:
+            results.append(
+                schemas.MentorshipRequestOut(
+                    id=r.id,
+                    mentor_id=r.mentor_id,
+                    mentor_name=r.mentor.display_name if r.mentor else "Arohan Mentor",
+                    student_id=r.student_id,
+                    student_name=current_user.full_name,
+                    topic=r.topic,
+                    student_goals=r.student_goals,
+                    preferred_language=r.preferred_language,
+                    status=r.status,
+                    mentor_response_message=r.mentor_response_message,
+                    safety_notes=r.safety_notes,
+                    created_at=r.created_at,
+                    updated_at=r.updated_at
+                )
+            )
+
+    return results
+
 @router.get("/{mentor_id}", response_model=schemas.MentorProfileOut)
 def get_mentor_detail(mentor_id: int, db: Session = Depends(get_db)):
     """Retrieves mentor profile with public guidance topics."""
@@ -96,64 +154,6 @@ def request_mentorship(
         created_at=mentorship_req.created_at,
         updated_at=mentorship_req.updated_at
     )
-
-@router.get("/my/requests", response_model=List[schemas.MentorshipRequestOut])
-def get_my_mentorship_requests(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Retrieves mentorship requests associated with current user (as either student or mentor).
-    """
-    results = []
-    if current_user.role == "mentor":
-        mentor_prof = db.query(models.MentorProfile).filter(models.MentorProfile.user_id == current_user.id).first()
-        if mentor_prof:
-            reqs = db.query(models.MentorshipRequest).filter(
-                models.MentorshipRequest.mentor_id == mentor_prof.id
-            ).order_by(models.MentorshipRequest.created_at.desc()).all()
-            for r in reqs:
-                results.append(
-                    schemas.MentorshipRequestOut(
-                        id=r.id,
-                        mentor_id=r.mentor_id,
-                        mentor_name=mentor_prof.display_name,
-                        student_id=r.student_id,
-                        student_name=r.student.full_name if r.student else "Student",
-                        topic=r.topic,
-                        student_goals=r.student_goals,
-                        preferred_language=r.preferred_language,
-                        status=r.status,
-                        mentor_response_message=r.mentor_response_message,
-                        safety_notes=r.safety_notes,
-                        created_at=r.created_at,
-                        updated_at=r.updated_at
-                    )
-                )
-    else:
-        reqs = db.query(models.MentorshipRequest).filter(
-            models.MentorshipRequest.student_id == current_user.id
-        ).order_by(models.MentorshipRequest.created_at.desc()).all()
-        for r in reqs:
-            results.append(
-                schemas.MentorshipRequestOut(
-                    id=r.id,
-                    mentor_id=r.mentor_id,
-                    mentor_name=r.mentor.display_name if r.mentor else "Arohan Mentor",
-                    student_id=r.student_id,
-                    student_name=current_user.full_name,
-                    topic=r.topic,
-                    student_goals=r.student_goals,
-                    preferred_language=r.preferred_language,
-                    status=r.status,
-                    mentor_response_message=r.mentor_response_message,
-                    safety_notes=r.safety_notes,
-                    created_at=r.created_at,
-                    updated_at=r.updated_at
-                )
-            )
-
-    return results
 
 @router.put("/requests/{request_id}", response_model=schemas.MentorshipRequestOut)
 def update_mentorship_request(

@@ -343,3 +343,59 @@ def test_facilitator_role_authorization(client):
         headers={"Authorization": f"Bearer {teacher_token}"}
     )
     assert guidance_res.status_code == 200
+
+def test_book_and_mentor_route_precedence(client):
+    # Student login
+    login_res = client.post("/api/v1/auth/login", json={
+        "email": "student@arohan.org",
+        "password": "student123"
+    })
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Test /books/my/listings does not collide with /{book_id}
+    listings_res = client.get("/api/v1/books/my/listings", headers=headers)
+    assert listings_res.status_code == 200
+    assert isinstance(listings_res.json(), list)
+
+    # Test /books/my/requests does not collide with /{book_id}
+    requests_res = client.get("/api/v1/books/my/requests", headers=headers)
+    assert requests_res.status_code == 200
+    assert isinstance(requests_res.json(), list)
+
+    # Test /mentors/my/requests does not collide with /{mentor_id}
+    mentor_reqs_res = client.get("/api/v1/mentors/my/requests", headers=headers)
+    assert mentor_reqs_res.status_code == 200
+    assert isinstance(mentor_reqs_res.json(), list)
+
+    # Test individual item lookup
+    all_books = client.get("/api/v1/books").json()
+    assert len(all_books) > 0
+    first_book_id = all_books[0]["id"]
+    book_detail = client.get(f"/api/v1/books/{first_book_id}")
+    assert book_detail.status_code == 200
+    assert book_detail.json()["id"] == first_book_id
+
+    all_mentors = client.get("/api/v1/mentors").json()
+    assert len(all_mentors) > 0
+    first_mentor_id = all_mentors[0]["id"]
+    mentor_detail = client.get(f"/api/v1/mentors/{first_mentor_id}")
+    assert mentor_detail.status_code == 200
+    assert mentor_detail.json()["id"] == first_mentor_id
+
+def test_missing_resource_404_responses(client):
+    # Non-existent book
+    res = client.get("/api/v1/books/99999")
+    assert res.status_code == 404
+    assert "detail" in res.json()
+
+    # Non-existent mentor
+    res = client.get("/api/v1/mentors/99999")
+    assert res.status_code == 404
+    assert "detail" in res.json()
+
+    # Non-existent opportunity
+    res = client.get("/api/v1/opportunities/99999")
+    assert res.status_code == 404
+    assert "detail" in res.json()
+

@@ -29,7 +29,7 @@ def health_check(db: Session = Depends(get_db)):
         "ai_provider": ai_mode,
         "is_ai_demo_mode": "Demo" in ai_mode,
         "version": "1.0.0",
-        "timestamp": datetime.datetime.utcnow().isoformat()
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
 
 @router.post("/seed")

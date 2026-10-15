@@ -3,6 +3,9 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, T
 from sqlalchemy.orm import relationship
 from app.database import Base
 
+def utc_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
 class User(Base):
     __tablename__ = "users"
 
@@ -17,8 +20,8 @@ class User(Base):
     state = Column(String(100), default="Tamil Nadu")
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     profile = relationship("StudentProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
@@ -45,8 +48,8 @@ class StudentProfile(Base):
     willingness_to_relocate = Column(String(50), default="nearby_only") # yes, nearby_only, no
     preferred_learning_mode = Column(String(50), default="mixed") # practical, academic, vocational, mixed
     accessibility_needs = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     user = relationship("User", back_populates="profile")
 
@@ -66,7 +69,7 @@ class CareerPathway(Base):
     alternative_pathways = Column(JSON, default=list) # list of alternative titles/descriptions
     source_references = Column(JSON, default=list) # list of source URLs and official schemes
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 class SavedRoadmap(Base):
     __tablename__ = "saved_roadmaps"
@@ -78,8 +81,8 @@ class SavedRoadmap(Base):
     target_role = Column(String(255), nullable=True)
     progress_percent = Column(Float, default=0.0)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     user = relationship("User", back_populates="roadmaps")
     steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan", order_by="RoadmapStep.step_order")
@@ -117,12 +120,12 @@ class Opportunity(Base):
     required_documents = Column(JSON, default=list) # list of required documents
     start_date = Column(String(50), nullable=True)
     closing_date = Column(String(50), nullable=True)
-    last_verified_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_verified_at = Column(DateTime, default=utc_now)
     verification_status = Column(String(50), default="verified") # verified, awaiting_verification, sample_demo
     state_applicability = Column(String(100), default="All India")
     education_stage_applicability = Column(JSON, default=list) # ["Class 9-10", "Class 11-12", "Undergraduate", "Graduate"]
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 class BookListing(Base):
     __tablename__ = "book_listings"
@@ -141,8 +144,8 @@ class BookListing(Base):
     status = Column(String(50), default="available") # available, requested, reserved, donated
     image_url = Column(String(500), nullable=True)
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     donor = relationship("User", back_populates="book_listings")
     requests = relationship("BookRequest", back_populates="book", cascade="all, delete-orphan")
@@ -156,8 +159,8 @@ class BookRequest(Base):
     request_note = Column(Text, nullable=False)
     status = Column(String(50), default="pending") # pending, approved, completed, cancelled, rejected
     safe_handover_details = Column(String(255), nullable=True) # e.g. "Available for pickup at Thanjavur Town Library Counter 2"
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     book = relationship("BookListing", back_populates="requests")
     student = relationship("User", back_populates="book_requests")
@@ -177,7 +180,7 @@ class MentorProfile(Base):
     verification_notes = Column(String(255), nullable=True)
     max_monthly_mentees = Column(Integer, default=5)
     safety_guidelines_acknowledged = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="mentor_profile")
     requests = relationship("MentorshipRequest", back_populates="mentor", cascade="all, delete-orphan")
@@ -194,8 +197,8 @@ class MentorshipRequest(Base):
     status = Column(String(50), default="pending") # pending, accepted, declined, completed
     mentor_response_message = Column(Text, nullable=True)
     safety_notes = Column(String(255), default="All sessions are platform-mediated and adhere to youth protection protocols.")
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     mentor = relationship("MentorProfile", back_populates="requests")
     student = relationship("User", foreign_keys=[student_id], back_populates="mentorship_requests")
@@ -208,7 +211,7 @@ class FacilitatorAssignment(Base):
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     school_or_center_name = Column(String(255), nullable=False)
     status = Column(String(50), default="active") # active, archived
-    assigned_at = Column(DateTime, default=datetime.datetime.utcnow)
+    assigned_at = Column(DateTime, default=utc_now)
 
     guidance_records = relationship("GuidanceRecord", back_populates="assignment", cascade="all, delete-orphan")
 
@@ -221,7 +224,7 @@ class GuidanceRecord(Base):
     recommended_pathway_title = Column(String(255), nullable=True)
     recommended_opportunity_id = Column(Integer, nullable=True)
     is_private_to_facilitator = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     assignment = relationship("FacilitatorAssignment", back_populates="guidance_records")
 
@@ -234,4 +237,4 @@ class SyncAuditLog(Base):
     resource_type = Column(String(100), nullable=False)
     resource_id = Column(Integer, nullable=True)
     details = Column(JSON, default=dict)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)

@@ -303,7 +303,7 @@ def update_step_status(
 
     if step_update.is_completed is not None:
         step.is_completed = step_update.is_completed
-        step.completed_at = datetime.datetime.utcnow() if step_update.is_completed else None
+        step.completed_at = datetime.datetime.now(datetime.timezone.utc) if step_update.is_completed else None
 
     if step_update.saved_next_action is not None:
         step.saved_next_action = step_update.saved_next_action
