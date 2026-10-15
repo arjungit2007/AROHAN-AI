@@ -9,6 +9,7 @@ from app.services.ai_provider import get_ai_provider
 
 router = APIRouter(prefix="/ai", tags=["AI Career Discovery"])
 
+@router.get("/recommend", response_model=schemas.CareerRecommendationResponse)
 @router.post("/recommend", response_model=schemas.CareerRecommendationResponse)
 async def recommend_career_pathways(
     profile_payload: Optional[schemas.StudentProfileBase] = None,

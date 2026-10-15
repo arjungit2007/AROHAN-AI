@@ -1,0 +1,11 @@
+{
+  "name": "arohan-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AROHAN AI: Rural career discovery, mentorship, BookBridge, and opportunity navigator.",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "test": "npm --prefix frontend test",
+    "dev": "npm --prefix frontend run dev"
+  }
+}
