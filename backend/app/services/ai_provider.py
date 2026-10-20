@@ -92,7 +92,7 @@ class RuleBasedDemoProvider(AIProvider):
 class GeminiProvider(AIProvider):
     """Integrates Google Gemini via HTTP API using backend-only API key."""
     def __init__(self, api_key: str):
-        self.api_key = api_key
+        self.api_key = api_key.strip().strip('"').strip("'").strip()
         self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
 
     async def generate_career_recommendations(
@@ -117,7 +117,7 @@ class GeminiProvider(AIProvider):
             "Return JSON only."
         )
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=25.0) as client:
                 res = await client.post(
                     self.api_url,
                     json={
@@ -136,10 +136,13 @@ class GeminiProvider(AIProvider):
                         return CareerRecommendationResponse(
                             recommendations=rec_list,
                             is_demo_mode=False,
-                            rationale="AI-generated recommendations synthesized from your profile."
+                            rationale="AI-generated recommendations synthesized from your profile via Google Gemini."
                         )
-        except Exception:
-            pass
+                else:
+                    print(f"[AROHAN AI] Gemini generate_career_recommendations error {res.status_code}: {res.text}")
+        except Exception as e:
+            print(f"[AROHAN AI] Gemini generate_career_recommendations exception: {e}")
+
         # Fallback if external API encounters network or quota error
         demo = RuleBasedDemoProvider()
         return await demo.generate_career_recommendations(profile)
@@ -153,7 +156,7 @@ class GeminiProvider(AIProvider):
                 role = "user" if m.get("role") == "user" else "model"
                 contents.append({"role": role, "parts": [{"text": m.get("content", "")}]})
             
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=25.0) as client:
                 res = await client.post(
                     self.api_url,
                     json={
@@ -172,14 +175,16 @@ class GeminiProvider(AIProvider):
                         identified_pathways=[],
                         is_demo_mode=False
                     )
-        except Exception:
-            pass
+                else:
+                    print(f"[AROHAN AI] Gemini chat error {res.status_code}: {res.text}")
+        except Exception as e:
+            print(f"[AROHAN AI] Gemini chat exception: {e}")
+
         demo = RuleBasedDemoProvider()
         return await demo.chat(messages, student_context)
 
 def get_ai_provider() -> AIProvider:
-    if settings.AI_PROVIDER == "gemini" and settings.GEMINI_API_KEY:
-        return GeminiProvider(settings.GEMINI_API_KEY)
-    elif settings.AI_PROVIDER == "auto" and settings.GEMINI_API_KEY:
-        return GeminiProvider(settings.GEMINI_API_KEY)
+    clean_key = settings.GEMINI_API_KEY.strip().strip('"').strip("'").strip()
+    if settings.AI_PROVIDER in ("gemini", "auto") and clean_key:
+        return GeminiProvider(clean_key)
     return RuleBasedDemoProvider()
