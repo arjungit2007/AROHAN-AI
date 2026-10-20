@@ -31,6 +31,12 @@ async def lifespan(app: FastAPI):
         print(f"Startup seed notice: {e}")
     finally:
         db.close()
+
+    from app.services.ai_provider import get_ai_provider
+    provider = get_ai_provider()
+    is_demo = "Demo" in provider.__class__.__name__
+    print(f"[AROHAN AI] Server startup complete: Database connected, AI Provider={provider.__class__.__name__} (is_demo_mode={is_demo})")
+
     yield
     # Shutdown logic if any
 

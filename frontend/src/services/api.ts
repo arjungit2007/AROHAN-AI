@@ -15,8 +15,9 @@ import {
 } from '../types';
 
 export function getBaseApiUrl(): string {
-  const envUrl = (import.meta.env.VITE_API_URL || '').trim();
-  if (envUrl) {
+  let envUrl = (import.meta.env.VITE_API_URL || '').trim();
+  envUrl = envUrl.replace(/^["']|["']$/g, '').trim();
+  if (envUrl && envUrl !== 'undefined' && envUrl !== 'null') {
     const sanitized = envUrl.replace(/\/+$/, '');
     if (sanitized.endsWith('/api/v1')) return sanitized;
     if (sanitized.endsWith('/api')) return `${sanitized}/v1`;
