@@ -92,18 +92,16 @@ class RuleBasedDemoProvider(AIProvider):
 class GeminiProvider(AIProvider):
     """Integrates Google Gemini via HTTP API with automatic model negotiation and key sanitization."""
     CANDIDATE_MODELS = [
-        ("v1beta", "gemini-2.0-flash"),
-        ("v1beta", "gemini-1.5-flash"),
-        ("v1", "gemini-1.5-flash"),
-        ("v1beta", "gemini-2.5-flash"),
-        ("v1beta", "gemini-1.5-flash-latest"),
-        ("v1beta", "gemini-1.5-pro"),
-        ("v1", "gemini-pro"),
+        ("v1beta", "gemini-3.8-flash"),
+        ("v1beta", "gemini-flash-latest"),
+        ("v1beta", "gemini-2.5-flash-lite"),
+        ("v1beta", "gemini-pro-latest"),
+        ("v1", "gemini-flash-latest"),
     ]
 
     def __init__(self, api_key: str):
         self.api_key = api_key.strip().strip('"').strip("'").strip()
-        self._working_model = ("v1beta", "gemini-2.0-flash")
+        self._working_model = ("v1beta", "gemini-3.8-flash")
 
     def _get_url(self, version: str, model: str) -> str:
         return f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={self.api_key}"

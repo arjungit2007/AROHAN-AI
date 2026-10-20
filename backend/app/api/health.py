@@ -59,18 +59,20 @@ async def gemini_check():
                     if "generateContent" in methods:
                         available_models.append(name)
             
-            # Test generateContent on the best available model or fallback
-            chosen_model = available_models[0] if available_models else "models/gemini-1.5-flash"
-            # Normalize model name for URL
-            model_path = chosen_model.replace("models/", "")
-            test_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_path}:generateContent?key={clean_key}"
+            candidates = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-pro-latest"]
+            test_res = None
+            tested_model = ""
+            for candidate in candidates:
+                test_url = f"https://generativelanguage.googleapis.com/v1beta/models/{candidate}:generateContent?key={clean_key}"
+                test_res = await client.post(
+                    test_url,
+                    json={"contents": [{"parts": [{"text": "Reply with only the word OK"}]}]}
+                )
+                tested_model = candidate
+                if test_res.status_code == 200:
+                    break
             
-            test_res = await client.post(
-                test_url,
-                json={"contents": [{"parts": [{"text": "Reply with only the word OK"}]}]}
-            )
-            
-            is_ok = test_res.status_code == 200
+            is_ok = test_res is not None and test_res.status_code == 200
             preview = ""
             if is_ok:
                 try:
@@ -80,9 +82,9 @@ async def gemini_check():
                     preview = "Success"
             else:
                 try:
-                    preview = test_res.text[:200]
+                    preview = test_res.text[:200] if test_res else "No response"
                 except Exception:
-                    preview = f"HTTP {test_res.status_code}"
+                    preview = f"HTTP {test_res.status_code}" if test_res else "Failed"
 
             return {
                 "configured": True,
@@ -90,8 +92,8 @@ async def gemini_check():
                 "key_length": len(clean_key),
                 "list_models_status": list_res.status_code,
                 "available_generate_models": available_models[:10],
-                "tested_model": model_path,
-                "google_status_code": test_res.status_code,
+                "tested_model": tested_model,
+                "google_status_code": test_res.status_code if test_res else 0,
                 "is_working": is_ok,
                 "google_response": preview
             }
