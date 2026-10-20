@@ -90,10 +90,44 @@ class RuleBasedDemoProvider(AIProvider):
         )
 
 class GeminiProvider(AIProvider):
-    """Integrates Google Gemini via HTTP API using backend-only API key."""
+    """Integrates Google Gemini via HTTP API with automatic model negotiation and key sanitization."""
+    CANDIDATE_MODELS = [
+        ("v1beta", "gemini-2.0-flash"),
+        ("v1beta", "gemini-1.5-flash"),
+        ("v1", "gemini-1.5-flash"),
+        ("v1beta", "gemini-2.5-flash"),
+        ("v1beta", "gemini-1.5-flash-latest"),
+        ("v1beta", "gemini-1.5-pro"),
+        ("v1", "gemini-pro"),
+    ]
+
     def __init__(self, api_key: str):
         self.api_key = api_key.strip().strip('"').strip("'").strip()
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+        self._working_model = ("v1beta", "gemini-2.0-flash")
+
+    def _get_url(self, version: str, model: str) -> str:
+        return f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={self.api_key}"
+
+    async def _post_with_fallback(self, client: httpx.AsyncClient, payload: dict) -> Optional[httpx.Response]:
+        # Try known working model first
+        attempts = [self._working_model] + [m for m in self.CANDIDATE_MODELS if m != self._working_model]
+        for ver, mod in attempts:
+            url = self._get_url(ver, mod)
+            try:
+                res = await client.post(url, json=payload)
+                if res.status_code == 200:
+                    self._working_model = (ver, mod)
+                    return res
+                elif res.status_code == 404:
+                    print(f"[AROHAN AI] Model {ver}/{mod} not found, trying next candidate...")
+                    continue
+                else:
+                    print(f"[AROHAN AI] Gemini {ver}/{mod} error {res.status_code}: {res.text[:200]}")
+                    return res
+            except Exception as e:
+                print(f"[AROHAN AI] Request failed for {ver}/{mod}: {e}")
+                continue
+        return None
 
     async def generate_career_recommendations(
         self, profile: StudentProfileBase
@@ -118,16 +152,16 @@ class GeminiProvider(AIProvider):
         )
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
-                res = await client.post(
-                    self.api_url,
-                    json={
+                res = await self._post_with_fallback(
+                    client,
+                    {
                         "contents": [
                             {"role": "user", "parts": [{"text": f"{system_instruction}\n\n{prompt}"}]}
                         ],
                         "generationConfig": {"responseMimeType": "application/json"}
                     }
                 )
-                if res.status_code == 200:
+                if res and res.status_code == 200:
                     data = res.json()
                     text = data["candidates"][0]["content"]["parts"][0]["text"]
                     parsed = json.loads(text)
@@ -136,14 +170,11 @@ class GeminiProvider(AIProvider):
                         return CareerRecommendationResponse(
                             recommendations=rec_list,
                             is_demo_mode=False,
-                            rationale="AI-generated recommendations synthesized from your profile via Google Gemini."
+                            rationale=f"AI-generated recommendations synthesized from your profile via Google Gemini ({self._working_model[1]})."
                         )
-                else:
-                    print(f"[AROHAN AI] Gemini generate_career_recommendations error {res.status_code}: {res.text}")
         except Exception as e:
             print(f"[AROHAN AI] Gemini generate_career_recommendations exception: {e}")
 
-        # Fallback if external API encounters network or quota error
         demo = RuleBasedDemoProvider()
         return await demo.generate_career_recommendations(profile)
 
@@ -157,16 +188,16 @@ class GeminiProvider(AIProvider):
                 contents.append({"role": role, "parts": [{"text": m.get("content", "")}]})
             
             async with httpx.AsyncClient(timeout=25.0) as client:
-                res = await client.post(
-                    self.api_url,
-                    json={
+                res = await self._post_with_fallback(
+                    client,
+                    {
                         "systemInstruction": {
                             "parts": [{"text": "You are Arohan AI, an empathetic and practical career advisor for rural Indian students. Provide realistic advice, mention official Indian schemes (NSP, SWAYAM, ITI), and suggest 2-3 next actions."}]
                         },
                         "contents": contents
                     }
                 )
-                if res.status_code == 200:
+                if res and res.status_code == 200:
                     data = res.json()
                     reply_text = data["candidates"][0]["content"]["parts"][0]["text"]
                     return AIChatResponse(
@@ -175,8 +206,6 @@ class GeminiProvider(AIProvider):
                         identified_pathways=[],
                         is_demo_mode=False
                     )
-                else:
-                    print(f"[AROHAN AI] Gemini chat error {res.status_code}: {res.text}")
         except Exception as e:
             print(f"[AROHAN AI] Gemini chat exception: {e}")
 
